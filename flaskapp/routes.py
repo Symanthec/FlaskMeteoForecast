@@ -2,7 +2,7 @@ from flask import render_template, flash, url_for
 from werkzeug.utils import redirect
 
 from flaskapp import app
-from flaskapp.forms.loginform import LoginForm
+from flaskapp.forms import LoginForm
 
 
 @app.route("/")
@@ -21,4 +21,5 @@ def login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
+    # todo: create register page
     return "Register page /register"
