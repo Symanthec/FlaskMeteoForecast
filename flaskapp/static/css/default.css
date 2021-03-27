@@ -1,0 +1,36 @@
+html {
+    font-family: 'PT Sans', sans-serif;
+}
+
+header {
+    background: #333;
+    color: white;
+    padding: 20px;
+    font-size: 1.1em;
+}
+
+.links-block li {
+    display: inline-block;
+    line-height: 20px;
+    padding: 3px 7px 3px 3px;
+    border-right: 2px solid white;
+}
+
+.links-block li:last-child {
+    border-right: none;
+}
+
+.links-block a {
+    color: white;
+    text-decoration: none;
+    font-family: 'PT Sans', sans-serif;
+    font-weight: bold;
+}
+
+form p input {
+    margin-top: 15px;
+}
+
+form p input:first-child {
+    margin-top: none;
+}

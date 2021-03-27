@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="static/css/reset.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/default.css">
+
+    {% block head_extra %}
+    {% endblock %}
+
+    <title>{{ title }} - flaskProject</title>
+</head>
+<body>
+    <header>
+        <nav class="links-block">
+            <ul>
+                <li><a href="{{ url_for('index') }}">Home page</a></li>
+                <li><a href="{{ url_for('login') }}">Login</a></li>
+                <li><a href="{{ url_for('register') }}">Register</a></li>
+            </ul>
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ol class="flash-messages">
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ol>
+        {% endif %}
+        {% endwith %}
+    </header>
+    {% block body %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,17 @@
+.boxwrapper {
+    max-width: 600px;
+    margin: 50px auto 0;
+    border: 1px solid black;
+    box-sizing: border-box;
+    padding: 20px;
+    background: white;
+    box-shadow: 0px 0px 10px rgba(.5, .5, .5, .35);
+}
+
+html {
+    background-image: url('../images/repeated-square.png');
+}
+
+.boxwrapper h2 {
+    font-size: 2em;
+}
