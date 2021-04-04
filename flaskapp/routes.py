@@ -23,4 +23,4 @@ def login():
 @app.route("/register", methods=["GET", "POST"])
 def register():
     # todo: create register page
-    return "Register page /register"
+    return "fsdfsdfsdfter"
