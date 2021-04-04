@@ -14,6 +14,7 @@ def index():
 def login():
     form = LoginForm()
     if form.validate_on_submit():
+
         flash(f"Login requested for user {form.username.data}, remember={form.remember.data}")
         return redirect(url_for('login'))
     return render_template("login.html", html_form=form, title="Login page")
