@@ -1,1 +1,4 @@
-from flaskapp import logger
+# from flaskapp import logger
+
+class OwmFetcher:
+    pass
