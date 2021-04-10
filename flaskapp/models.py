@@ -1,5 +1,5 @@
 from flaskapp import db
-from flaskapp.weather import WindDirection, Fallout, FalloutType
+from flaskapp.weathertypes import WindDirection, FalloutType
 
 
 class User(db.Model):

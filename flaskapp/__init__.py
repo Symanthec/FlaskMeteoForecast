@@ -11,6 +11,7 @@ logger = app.logger
 
 db = SQLAlchemy(app)
 from flaskapp import models
+
 if not Path(basedir + "/flaskapp.db").exists():
     logger.warn("Database wasn't found! Creating new")
     db.create_all()
