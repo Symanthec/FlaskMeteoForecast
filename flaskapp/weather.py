@@ -4,27 +4,28 @@ import datetime
 
 
 class WindDirection(Enum):
-    NONE = 0
-    N = 1
-    NE = 2
-    E = 3
-    SE = 4
-    S = 5
-    SW = 6
-    W = 7
-    NW = 8
+    NONE = "None"
+    N = "N"
+    NE = "NE"
+    E = "E"
+    SE = "SE"
+    S = "S"
+    SW = "SW"
+    W = "W"
+    NW = "NW"
 
 
-# Fallout type enum
 class FalloutType(Enum):
-    NONE = 0
-    RAIN = 1
-    HEAVY_RAIN = 2
-    SNOW = 3
+    NONE = "None"
+    RAIN = "Rain"
+    HEAVY_RAIN = "Heavy rain"
+    SNOW = "Snow"
 
 
 # Universal type for fallout
 class Fallout:
+    type = FalloutType.NONE
+    chance = 0
 
     def __init__(self, fallouttype: FalloutType, chance: float):
         self.type = fallouttype
