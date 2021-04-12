@@ -5,12 +5,11 @@ click==7.1.2
 Flask==1.1.2
 Flask-SQLAlchemy==2.5.1
 Flask-WTF==0.14.3
-flaskapp==1.0.5
 greenlet==1.0.0
 idna==2.10
 itsdangerous==1.1.0
 Jinja2==2.11.3
-logging==0.4.9.6
+logging
 Mako==1.1.4
 MarkupSafe==1.1.1
 pathlib==1.0.1
