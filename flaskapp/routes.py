@@ -1,26 +1,11 @@
-from flask import render_template, flash, url_for
-from werkzeug.utils import redirect
-
+from flask import render_template
+from flask import request
 from flaskapp import app
-from flaskapp.forms import LoginForm
 
 
 @app.route("/")
 def index():
+    """
+        First webpage to be seen by user. May in future show one week forecast based on location.
+    """
     return render_template("index.html", title="Home page")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-
-        flash(f"Login requested for user {form.username.data}, remember={form.remember.data}")
-        return redirect(url_for('login'))
-    return render_template("login.html", html_form=form, title="Login page")
-
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    # todo: create register page
-    return "fsdfsdfsdfter"
