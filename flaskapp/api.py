@@ -8,7 +8,6 @@ from flaskapp.weathertypes import WeatherRaw, degreesToWind
 
 class OWM:
     """ OpenWeatherMap API """
-    token = "29e6fcbaa817f82fb78915629169aa0d"  # временная заглушка
     current_city_url = "https://api.openweathermap.org/data/2.5/weather?q={city}{state}{country}&appid={token}"
     current_id_url = "https://api.openweathermap.org/data/2.5/weather?id={id}&appid={token}"
     current_zip_url = "https://api.openweathermap.org/data/2.5/weather?zip={zip}{country}&appid={token}"
@@ -22,10 +21,10 @@ class OWM:
 
     @classmethod
     def setToken(cls, token: str) -> bool:
-        query = cls.current_city_url.format(city="Moscow", token=token)
+        query = cls.current_city_url.format(city="Moscow", state="", country="", token=token)
         if OWM.isValidResponse(get(query)):
             cls.token = token
-            logger.info("Changed token successfully")
+            logger.info("OpenWeatherMap token changed successfully")
             return True
         else:
             logger.warn("Token remains unchanged.")
@@ -77,7 +76,6 @@ class OWM:
 
 class WeatherAPI:
     """ Weather API """
-    token = "f9c01d91dd6b4f26b2d122127211504"  # временная заглушка
     curcityurl = "https://api.weatherapi.com/v1/current.json?key={key}&q={city}&aqi=no"
 
     @classmethod

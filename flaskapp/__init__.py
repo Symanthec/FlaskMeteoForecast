@@ -18,6 +18,8 @@ if not os.path.exists(database_path):
     logger.warn("Database wasn't found! Creating new")
     db.create_all()
 
-# session = db.session
+from flaskapp.api import OWM, WeatherAPI
+OWM.setToken(app.config["OWM_TOKEN"])
+WeatherAPI.setToken(app.config["WAPI_TOKEN"])
 
 from flaskapp import routes
