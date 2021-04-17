@@ -2,7 +2,7 @@ from flask import render_template
 from flask import request
 
 from flaskapp import app
-from flaskapp.api import OWM
+from flaskapp.api import OWM, WeatherAPI
 from flaskapp.weathertypes import WeatherRaw
 
 
@@ -20,14 +20,16 @@ def weather():
     state = request.args.get("state", None)
     country = request.args.get("country", None)
 
-    weather = WeatherRaw.empty()
+    weatherowm = WeatherRaw.empty()
+    weatherapi = WeatherRaw.empty()
     if city is not None:
         if state is not None:
             if country is not None:
-                weather = OWM.getCurrentByCityStateCountry(city, state, country)
+                weatherowm = OWM.getCurrentByCityStateCountry(city, state, country)
             else:
-                weather = OWM.getCurrentByCityState(city, state)
+                weatherowm = OWM.getCurrentByCityState(city, state)
         else:
-            weather = OWM.getCurrentByCity(city)
+            weatherowm = OWM.getCurrentByCity(city)
+        weatherapi = WeatherAPI.getCurrentByCity(city)
 
-    return str(weather)
+    return render_template("weather.html", title="Weather forecast", city=city, results=[weatherowm, weatherapi])

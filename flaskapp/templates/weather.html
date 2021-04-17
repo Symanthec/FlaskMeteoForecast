@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+{% endblock %}
+
+{% block body %}
+
+{% for weather in results %}
+<div class="weather-block">
+    <h3>Forecast for {{ city }}:</h3>
+    <ol>
+        <li>Temperature: {{ weather.temperature }} °C</li>
+        <li>Humidity: {{ weather.humidity }} %</li>
+        <li>Pressure: {{ weather.pressure }} mmhg</li>
+        <li>Wind speed: {{ weather.wind_speed }} m/s</li>
+        <li>Wind direction: {{ weather.wind_direction }}</li>
+    </ol>
+</div>
+{% endfor %}
+
+{% endblock %}

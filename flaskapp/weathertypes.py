@@ -105,17 +105,3 @@ class WeatherRaw:
         final["wind_direction"] = max(final["wind_direction"], key=list.count)
 
         return WeatherRaw(**final)
-
-    def __str__(self):
-        return f"""
-        <pre>
-        ======================
-        Weather:
-         Temperature = {self.temperature} °C
-         Humidity = {self.humidity} %
-         Pressure = {self.pressure} mmhg
-         Wind speed = {self.wind_speed} m/s
-         Wind direction = {self.wind_direction}
-        ======================
-        </pre>
-        """
