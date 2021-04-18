@@ -14,3 +14,4 @@ class Config:
 
     OWM_TOKEN = os.getenv("OWM_TOKEN") or "29e6fcbaa817f82fb78915629169aa0d"
     WAPI_TOKEN = os.getenv("WAPI_TOKEN") or "f9c01d91dd6b4f26b2d122127211504"
+    WSTACK_TOKEN = os.getenv("WSTACK_TOKEN") or "17960f14de602f76776f8fb0a4a872bf"
