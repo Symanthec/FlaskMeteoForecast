@@ -2,7 +2,7 @@ from flask import render_template
 from flask import request
 
 from flaskapp import app
-from flaskapp.api import OWM, WeatherAPI, WeatherStack
+from flaskapp.api import Bundler
 
 
 @app.route("/")
@@ -16,19 +16,15 @@ def index():
 @app.route("/weather")
 def weather():
     city = request.args.get("city", None)
-    state = request.args.get("state", None)
-    country = request.args.get("country", None)
+    latitude = request.args.get("lat", None)
+    longitude = request.args.get("lon", None)
 
-    weathers = []
+    results, location = [], None
     if city is not None:
-        if state is not None:
-            if country is not None:
-                weathers.append(OWM.getCurrentByCityStateCountry(city, state, country))
-            else:
-                weathers.append(OWM.getCurrentByCityState(city, state))
-        else:
-            weathers.append(OWM.getCurrentByCity(city))
-        weathers.append(WeatherAPI.getCurrentByCity(city))
-        weathers.append(WeatherStack.getCurrentByCity(city))
+        results = Bundler.bundleByCity(city)
+        location = city
+    elif latitude is not None and longitude is not None:
+        results = Bundler.bundleByCoordinates(latitude, longitude)
+        location = f"geoposition: {latitude};{longitude}"
 
-    return render_template("weather.html", title="Weather forecast", city=city, results=weathers)
+    return render_template("weather.html", title="Weather forecast", location=location, results=results)

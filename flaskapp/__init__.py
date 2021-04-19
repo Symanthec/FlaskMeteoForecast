@@ -1,7 +1,6 @@
 import os
 
 from flask import Flask
-from flask_admin.contrib.sqla import ModelView
 from flask_sqlalchemy import SQLAlchemy
 from config import Config, basedir
 
@@ -21,11 +20,11 @@ if not os.path.exists(database_path):
     db.create_all()
 
 # Инициализация API
-from flaskapp.api import OWM, WeatherAPI, WeatherStack
-
-OWM.setToken(app.config["OWM_TOKEN"])
-WeatherAPI.setToken(app.config["WAPI_TOKEN"])
-WeatherStack.setToken(app.config["WSTACK_TOKEN"])
+from flaskapp.api import OWM, WeatherAPI, WeatherStack, VisualCrossing
+OWM.setToken(app.config["OPEN_WEATHER_MAP_TOKEN"])
+WeatherAPI.setToken(app.config["WEATHER_API_TOKEN"])
+WeatherStack.setToken(app.config["WEATHER_STACK_TOKEN"])
+VisualCrossing.setToken(app.config["VISUAL_CROSSING_TOKEN"])
 
 # Путей
 from flaskapp import routes

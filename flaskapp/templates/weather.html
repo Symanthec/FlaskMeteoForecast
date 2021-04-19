@@ -4,18 +4,26 @@
 {% endblock %}
 
 {% block body %}
-
 {% for weather in results %}
 <div class="weather-block">
-    <h3>Forecast for {{ city }}:</h3>
+    <h3>Forecast for {{ location }}:</h3>
     <ol>
-        <li>Temperature: {{ weather.temperature }} °C</li>
+        {% if weather.temperature != None %}
+        <li>Temperature: {{ '%0.1f'|format(weather.temperature|float) }} °C</li>
+        {% endif %}
+        {% if weather.humidity != None %}
         <li>Humidity: {{ weather.humidity }} %</li>
-        <li>Pressure: {{ weather.pressure }} mmhg</li>
-        <li>Wind speed: {{ weather.wind_speed }} m/s</li>
+        {% endif %}
+        {% if weather.pressure != None %}
+        <li>Pressure: {{ '%2.f'|format(weather.pressure|float) }} mmhg</li>
+        {% endif %}
+        {% if weather.wind_speed != None %}
+        <li>Wind speed: {{ '%0.1f'|format(weather.wind_speed|float) }} m/s</li>
+        {% endif %}
+        {% if weather.wind_direction != None %}
         <li>Wind direction: {{ weather.wind_direction }}</li>
+        {% endif %}
     </ol>
 </div>
 {% endfor %}
-
 {% endblock %}
