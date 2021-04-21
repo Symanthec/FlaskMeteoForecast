@@ -30,6 +30,8 @@ wind_map = [
 
 
 def degreesToWind(degrees: float) -> WindDirection:
+    if not degrees:
+        return WindDirection.NONE
     region = 45  # degrees
     delta = 22.5
     for i in range(9):
@@ -45,7 +47,6 @@ class WeatherRaw:
         self.pressure = kwargs.get("pressure", None)
         self.wind_speed = kwargs.get("wind_speed", None)
         self.wind_direction = kwargs.get("wind_direction", WindDirection.NONE)
-
 
     def isEmpty(self):
         return self.temperature is None and \
@@ -63,12 +64,12 @@ class WeatherRaw:
                           wind_direction=WindDirection.NONE)
 
     @staticmethod
-    def merge(*weathers):
+    def merge(weathers: list):
         final = {
-            "temperature": None,
-            "humidity": None,
-            "pressure": None,
-            "wind_speed": None,
+            "temperature": 0,
+            "humidity": 0,
+            "pressure": 0,
+            "wind_speed": 0,
             "wind_direction": []
         }
 
@@ -79,22 +80,31 @@ class WeatherRaw:
             "wind_speed": 0,
         }
 
-        for key in final.keys():
-            for weather in weathers:
-                if weather[key] is not None:
-                    if key == "wind_direction":
-                        final[key].append(weather[key])
-                        final_count[key] += 1
-                    else:
-                        if final[key] is None:
-                            final[key] = weather[key]
-                        else:
-                            final[key] += weather[key]
-                        final_count[key] += 1
+        for weather in weathers:
+            if weather.temperature is not None:
+                final["temperature"] += weather.temperature
+                final_count["temperature"] += 1
+            if weather.humidity is not None:
+                final["humidity"] += weather.humidity
+                final_count["humidity"] += 1
+            if weather.pressure is not None:
+                final["pressure"] += weather.pressure
+                final_count["pressure"] += 1
+            if weather.wind_speed is not None:
+                final["wind_speed"] += weather.wind_speed
+                final_count["wind_speed"] += 1
+            final["wind_direction"].append(weather.wind_direction)
 
-        for key in final.keys()[:-1]:
+        for key in list(final.keys())[:-1]:
             if final_count[key] != 0:
                 final[key] /= final_count[key]
-        final["wind_direction"] = max(final["wind_direction"], key=list.count)
+            else:
+                final[key] = None
+
+        tmp_list = list(final["wind_direction"])
+        final["wind_direction"] = max(tmp_list, key=tmp_list.count)
 
         return WeatherRaw(**final)
+
+    def toModel(self, model_type: type):
+        return model_type(**self.__dict__)

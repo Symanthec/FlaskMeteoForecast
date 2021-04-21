@@ -1,20 +1,37 @@
+from datetime import datetime
 from json import loads
 from requests import Response, get
 
 from flaskapp import logger
+from flaskapp.models import WeatherOwm, WeatherWStack, WeatherWapi, WeatherVisual
+from flaskapp import db
 from flaskapp.weathertypes import WeatherRaw, degreesToWind
+
+kps_to_ms = lambda x: x / 3.6 if x is not None else None
+mbar_to_mmhg = lambda x: x * 3 / 4 if x is not None else None
 
 
 class Bundler:
 
     @staticmethod
-    def bundleByCity(city_name, raw: bool = True):
-        results = [
-            OWM.getCurrentByCity(city_name),
-            WeatherAPI.getCurrentByCity(city_name),
-            WeatherStack.getCurrentByCity(city_name),
-            VisualCrossing.getCurrentByCity(city_name)
-        ]
+    def bundleByCity(city_name, raw: bool = True, db_add: bool = True):
+        owm = OWM.getCurrentByCity(city_name)
+        wapi = WeatherAPI.getCurrentByCity(city_name)
+        wstack = WeatherStack.getCurrentByCity(city_name)
+        visual = VisualCrossing.getCurrentByCity(city_name)
+
+        if db_add:
+            if not owm.isEmpty():
+                db.session.add(owm.toModel(WeatherOwm))
+            if not wapi.isEmpty():
+                db.session.add(wapi.toModel(WeatherWapi))
+            if not wstack.isEmpty():
+                db.session.add(wstack.toModel(WeatherWStack))
+            if not visual.isEmpty():
+                db.session.add(visual.toModel(WeatherVisual))
+            db.session.commit()
+
+        results = [owm, wapi, wstack, visual]
 
         if raw:
             return results
@@ -22,13 +39,20 @@ class Bundler:
             return WeatherRaw.merge(results)
 
     @staticmethod
-    def bundleByCoordinates(latitude, longitude, raw: bool = True):
-        results = [
-            OWM.getCurrentByCoordinates(latitude, longitude),
-            WeatherAPI.getCurrentByCoordinates(latitude, longitude),
-            WeatherStack.getCurrentByCoordinates(latitude, longitude),
-            VisualCrossing.getCurrentByCoordinates(latitude, longitude)
-        ]
+    def bundleByCoordinates(latitude, longitude, raw: bool = True, db_add: bool = True):
+        owm = OWM.getCurrentByCoordinates(latitude, longitude)
+        wapi = WeatherAPI.getCurrentByCoordinates(latitude, longitude)
+        wstack = WeatherStack.getCurrentByCoordinates(latitude, longitude)
+        visual = VisualCrossing.getCurrentByCoordinates(latitude, longitude)
+
+        if db_add:
+            db.session.add(owm.toModel(WeatherOwm))
+            db.session.add(wapi.toModel(WeatherWapi))
+            db.session.add(wstack.toModel(WeatherWStack))
+            db.session.add(visual.toModel(WeatherVisual))
+            db.session.commit()
+
+        results = [owm, wapi, wstack, visual]
 
         if raw:
             return results
@@ -66,11 +90,11 @@ class OWM:
     def parseFromResponse(response: Response) -> WeatherRaw:
         json = loads(response.text)
         kwargs = {
-            "temperature": json["main"]["temp"] - 273.15,
-            "humidity": json["main"]["humidity"],
-            "pressure": json["main"]["pressure"] / 4 * 3,
-            "wind_speed": json["wind"]["speed"],
-            "wind_direction": degreesToWind(json["wind"]["deg"])
+            "temperature": json["main"].get("temp", None) - 273.15,
+            "humidity": json["main"].get("humidity", None),
+            "pressure": mbar_to_mmhg(json["main"].get("pressure", None)),
+            "wind_speed": json["wind"].get("speed", None),
+            "wind_direction": degreesToWind(json["wind"].get("deg", None))
         }
         return WeatherRaw(**kwargs)
 
@@ -160,11 +184,11 @@ class WeatherAPI:
     def parseCurrentWeather(response_text: str) -> WeatherRaw:
         json = loads(response_text)["current"]
         kwargs = {
-            "temperature": json["temp_c"],
-            "humidity": json["humidity"],
-            "pressure": json["pressure_mb"] / 4 * 3,  # из мБар в мм рт ст
-            "wind_speed": json["wind_kph"] / 3.6,  # из км/ч в м/с
-            "wind_direction": degreesToWind(json["wind_degree"])
+            "temperature": json.get("temp_c", None),
+            "humidity": json.get("humidity", None),
+            "pressure": mbar_to_mmhg(json.get("pressure_mb", None)),
+            "wind_speed": kps_to_ms(json.get("wind_kph", None)),
+            "wind_direction": degreesToWind(json.get("wind_degree", None))
         }
         return WeatherRaw(**kwargs)
 
@@ -172,8 +196,6 @@ class WeatherAPI:
 class WeatherStack:
     token = ""
     current_weather_url = "http://api.weatherstack.com/current?access_key={token}&query={query}"
-    history_weather_url = "http://api.weatherstack.com/historical?access_key={token}&query={query}" \
-                          "&historical_date={date} "
 
     @classmethod
     def setToken(cls, token):
@@ -230,11 +252,11 @@ class WeatherStack:
     def parseCurrentWeather(response: Response) -> WeatherRaw:
         json = loads(response.text)["current"]
         kwargs = {
-            "temperature": json["temperature"],
-            "humidity": json["humidity"],
-            "pressure": json["pressure"] / 4 * 3,
-            "wind_speed": json["wind_speed"] / 3.6,
-            "wind_direction": degreesToWind(json["wind_degree"])
+            "temperature": json.get("temperature", None),
+            "humidity": json.get("humidity", None),
+            "pressure": mbar_to_mmhg(json.get("pressure", None)),
+            "wind_speed": kps_to_ms(json.get("wind_speed", None)),
+            "wind_direction": degreesToWind(json.get("wind_degree", None))
         }
         return WeatherRaw(**kwargs)
 
@@ -243,8 +265,9 @@ class VisualCrossing:
     token = ""
     current_weather_url = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/" \
                           "{query}?unitGroup=metric&key={token}&include=current"
-    # TODO add history records
-    history_weather_url = ""
+    history_weather_url = "https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/weatherdata" \
+                          "/history?&aggregateHours=24&startDateTime={date}&endDateTime={date}&contentType=json" \
+                          "&unitGroup=metric&location={query}&key={token}"
 
     @classmethod
     def setToken(cls, token):
@@ -299,11 +322,11 @@ class VisualCrossing:
         try:
             json = loads(response.text)["currentConditions"]
             kwargs = {
-                "temperature": json["temp"],
-                "humidity": json["humidity"],
-                "pressure": json["pressure"],
-                "wind_speed": json["windspeed"],
-                "wind_direction": degreesToWind(json["winddir"])
+                "temperature": json.get("temp", None),
+                "humidity": json.get("humidity", None),
+                "pressure": mbar_to_mmhg(json.get("sealevelpressure", None)),
+                "wind_speed": kps_to_ms(json.get("windspeed", None)),
+                "wind_direction": degreesToWind(json.get("winddir", None))
             }
             return WeatherRaw(**kwargs)
         except KeyError:
@@ -312,3 +335,52 @@ class VisualCrossing:
             else:
                 logger.error(f"VisualCrossing {response.status_code} error: {response.text}")
             return WeatherRaw.empty()
+
+    @classmethod
+    def getPastByCity(cls, city_name: str, dt: datetime) -> WeatherRaw:
+        response = get(
+            cls.history_weather_url.format(date=dt.strftime("%Y-%m-%dT%H:%M:%S"), token=cls.token, query=city_name))
+        is_good, message = cls.isResponseGood(response)
+        if is_good:
+            logger.info(response.text)
+            return cls.parsePastWeather(response)
+        else:
+            logger.error(f"WeatherStack error while fetching current weather: {message}")
+            return WeatherRaw.empty()
+
+    @classmethod
+    def getPastByCityCountry(cls, city_name: str, country: str, dt: datetime) -> WeatherRaw:
+        response = get(cls.history_weather_url.format(date=dt.strftime("%Y-%m-%dT%H:%M:%S"), token=cls.token,
+                                                      query=city_name + "," + country))
+        is_good, message = cls.isResponseGood(response)
+        if is_good:
+            logger.info("good resp")
+            return cls.parsePastWeather(response)
+        else:
+            logger.error(f"WeatherStack error while fetching current weather: {message}")
+            return WeatherRaw.empty()
+
+    @classmethod
+    def getPastByCoordinates(cls, latitude, longitude, dt: datetime) -> WeatherRaw:
+        response = get(cls.history_weather_url.format(date=dt.strftime("%Y-%m-%dT%H:%M:%S"), token=cls.token,
+                                                      query=str(latitude) + ',' + str(longitude)))
+        is_good, message = cls.isResponseGood(response)
+        if is_good:
+            return cls.parsePastWeather(response)
+        else:
+            logger.error(f"WeatherStack error while fetching current weather: {message}")
+            return WeatherRaw.empty()
+
+    @classmethod
+    def parsePastWeather(cls, response: Response) -> WeatherRaw:
+        json = loads(response.text)["locations"]
+        json = json[list(json.keys())[0]]["values"][0]  # get first value in dict -> values
+        kwargs = {
+            "temperature": json.get("temp", None),
+            "pressure": mbar_to_mmhg(json.get("sealevelpressure", None)),
+            "humidity": json.get("humidity", None),
+            "wind_speed": kps_to_ms(json.get("wspd", None)),
+            "wind_direction": degreesToWind(json.get("wdir", None))
+        }
+
+        return WeatherRaw(**kwargs)

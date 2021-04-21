@@ -1,12 +1,12 @@
 from flaskapp import db
 from flaskapp.weathertypes import WindDirection
+from flaskapp import logger
 
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), unique=True)
     password_hash = db.Column(db.String(128))
-    location = db.relationship("Location", backref='user', lazy="dynamic")
 
     def __repr__(self):
         return f"<User {self.username}>"
@@ -18,15 +18,13 @@ class Location(db.Model):
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
     zipcode = db.Column(db.Integer, unique=True)
-    cityid = db.Column(db.Integer, unique=True)
-    location_user_id = db.Column(db.Integer, db.ForeignKey('user.user_id'))
-    states = db.relationship('Weather', backref="location", lazy="dynamic")
+    city_id = db.Column(db.Integer, unique=True)
 
     def __repr__(self):
         return f"<Location {self.name}>"
 
 
-class Weather(db.Model):
+class WeatherVisual(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     temperature = db.Column(db.Float)
     pressure = db.Column(db.Float)
@@ -34,5 +32,57 @@ class Weather(db.Model):
     wind_speed = db.Column(db.Float)
     wind_direction = db.Column(db.Enum(WindDirection))
 
+    def __init__(self, **kwargs):
+        super(WeatherVisual, self).__init__(**kwargs)
+        logger.info("Created VisualCrossing field.")
+
     def __repr__(self):
-        return f"<Weather {self.date}>"
+        return f"<VisualCrossing Weather {self.date}>"
+
+
+class WeatherOwm(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column(db.Float)
+    pressure = db.Column(db.Float)
+    humidity = db.Column(db.Float)
+    wind_speed = db.Column(db.Float)
+    wind_direction = db.Column(db.Enum(WindDirection))
+
+    def __init__(self, **kwargs):
+        super(WeatherOwm, self).__init__(**kwargs)
+        logger.info("Created OpenWeatherMap field.")
+
+    def __repr__(self):
+        return f"<OWM Weather {self.date}>"
+
+
+class WeatherWStack(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column(db.Float)
+    pressure = db.Column(db.Float)
+    humidity = db.Column(db.Float)
+    wind_speed = db.Column(db.Float)
+    wind_direction = db.Column(db.Enum(WindDirection))
+
+    def __init__(self, **kwargs):
+        super(WeatherWStack, self).__init__(**kwargs)
+        logger.info("Created WeatherStack field.")
+
+    def __repr__(self):
+        return f"<WeatherStack Weather {self.date}>"
+
+
+class WeatherWapi(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column(db.Float)
+    pressure = db.Column(db.Float)
+    humidity = db.Column(db.Float)
+    wind_speed = db.Column(db.Float)
+    wind_direction = db.Column(db.Enum(WindDirection))
+
+    def __init__(self, **kwargs):
+        super(WeatherWapi, self).__init__(**kwargs)
+        logger.info("Created WeatherAPI field.")
+
+    def __repr__(self):
+        return f"<WeatherAPI Weather {self.date}>"

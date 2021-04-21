@@ -7,9 +7,6 @@ from flaskapp.api import Bundler
 
 @app.route("/")
 def index():
-    """
-        First webpage to be seen by user. May in future show one week forecast based on location.
-    """
     return render_template("index.html", title="Home page")
 
 
@@ -20,11 +17,20 @@ def weather():
     longitude = request.args.get("lon", None)
 
     results, location = [], None
+    raw = False
     if city is not None:
-        results = Bundler.bundleByCity(city)
+        if not raw:
+            results = [Bundler.bundleByCity(city, raw=raw)]
+        else:
+            results = Bundler.bundleByCity(city)
+
         location = city
     elif latitude is not None and longitude is not None:
-        results = Bundler.bundleByCoordinates(latitude, longitude)
+        if not raw:
+            results = [Bundler.bundleByCoordinates(latitude, longitude, raw=raw)]
+        else:
+            results = Bundler.bundleByCoordinates(latitude, longitude)
+
         location = f"geoposition: {latitude};{longitude}"
 
     return render_template("weather.html", title="Weather forecast", location=location, results=results)
