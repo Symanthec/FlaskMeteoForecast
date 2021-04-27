@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flaskapp import logger
 
 
@@ -9,3 +11,8 @@ def check_type(value: object, req_type: type, default: object = None, warn: bool
         return default
     else:
         return value
+
+
+def dbdatetime():
+    dt = datetime.today()
+    return dt.replace(hour=dt.hour // 6 * 6, minute=0, second=0, microsecond=0)

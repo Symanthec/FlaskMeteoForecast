@@ -1,63 +1,116 @@
 from datetime import datetime
 from json import loads
 from requests import Response, get
+from pycountry import countries
 
-from flaskapp import logger
-from flaskapp.models import WeatherOwm, WeatherWStack, WeatherWapi, WeatherVisual
-from flaskapp import db
+from flaskapp import logger, dbactions, db
+from flaskapp.models import Location, Weather
+from flaskapp.utils import dbdatetime
 from flaskapp.weathertypes import WeatherRaw, degreesToWind
 
-kps_to_ms = lambda x: x / 3.6 if x is not None else None
-mbar_to_mmhg = lambda x: x * 3 / 4 if x is not None else None
+
+def kps_to_ms(x):
+    x / 3.6 if x is not None else None
+
+
+def mbar_to_mmhg(x):
+    return x * 3 / 4 if x is not None else None
 
 
 class Bundler:
 
     @staticmethod
-    def bundleByCity(city_name, raw: bool = True, db_add: bool = True):
-        owm = OWM.getCurrentByCity(city_name)
-        wapi = WeatherAPI.getCurrentByCity(city_name)
-        wstack = WeatherStack.getCurrentByCity(city_name)
-        visual = VisualCrossing.getCurrentByCity(city_name)
-
-        if db_add:
-            if not owm.isEmpty():
-                db.session.add(owm.toModel(WeatherOwm))
-            if not wapi.isEmpty():
-                db.session.add(wapi.toModel(WeatherWapi))
-            if not wstack.isEmpty():
-                db.session.add(wstack.toModel(WeatherWStack))
-            if not visual.isEmpty():
-                db.session.add(visual.toModel(WeatherVisual))
-            db.session.commit()
-
-        results = [owm, wapi, wstack, visual]
-
-        if raw:
-            return results
-        else:
-            return WeatherRaw.merge(results)
+    def currentByLocation(location: Location):
+        dt = datetime.today()
+        dt = dt.replace(hour=dt.hour // 6 * 6, minute=0, second=0, microsecond=0)
+        return dbactions.weatherDataByLocationDate(location, dt)
 
     @staticmethod
-    def bundleByCoordinates(latitude, longitude, raw: bool = True, db_add: bool = True):
-        owm = OWM.getCurrentByCoordinates(latitude, longitude)
-        wapi = WeatherAPI.getCurrentByCoordinates(latitude, longitude)
-        wstack = WeatherStack.getCurrentByCoordinates(latitude, longitude)
-        visual = VisualCrossing.getCurrentByCoordinates(latitude, longitude)
+    def currentByName(city_name, into_db: bool = True, merge: bool = True):
+        dt = dbdatetime()
+        results = [
+            OWM.getCurrentByCity(city_name),
+            WeatherStack.getCurrentByCity(city_name),
+            WeatherAPI.getCurrentByCity(city_name),
+            VisualCrossing.getCurrentByCity(city_name)
+        ]
 
-        if db_add:
-            db.session.add(owm.toModel(WeatherOwm))
-            db.session.add(wapi.toModel(WeatherWapi))
-            db.session.add(wstack.toModel(WeatherWStack))
-            db.session.add(visual.toModel(WeatherVisual))
+        if into_db:
+            location = dbactions.locationByName(city_name)
+            if location is not None:
+                for weather in results:
+                    in_base = Weather.query.filter_by(temperature=weather.temperature,
+                                                      humidity=weather.humidity,
+                                                      pressure=weather.pressure,
+                                                      wind_speed=weather.wind_speed,
+                                                      wind_direction=weather.wind_direction).first() is not None
+                    if not (weather.isEmpty() or in_base):
+                        weather = weather.toModel(Weather, dt, location.location_id)
+                        db.session.add(weather)
             db.session.commit()
 
-        results = [owm, wapi, wstack, visual]
-
-        if raw:
-            return results
+        if merge:
+            return [WeatherRaw.merge(results)]
         else:
-            return WeatherRaw.merge(results)
+            return results
+
+    @staticmethod
+    def currentByCoordinates(lat, lon, into_db: bool = True, merge: bool = True):
+        dt = dbdatetime()
+        results = [
+            OWM.getCurrentByCoordinates(lat, lon),
+            WeatherStack.getCurrentByCoordinates(lat, lon),
+            WeatherAPI.getCurrentByCoordinates(lat, lon),
+            VisualCrossing.getCurrentByCoordinates(lat, lon)
+        ]
+
+        if into_db:
+            location = dbactions.locationByCoordinates(lat, lon)
+            if location is not None:
+                for weather in results:
+                    in_base = Weather.query.filter_by(temperature=weather.temperature,
+                                                      humidity=weather.humidity,
+                                                      pressure=weather.pressure,
+                                                      wind_speed=weather.wind_speed,
+                                                      wind_direction=weather.wind_direction).first() is not None
+                    if not (weather.isEmpty() or in_base):
+                        weather = weather.toModel(Weather, dt, location.location_id)
+                        db.session.add(weather)
+            db.session.commit()
+
+        if merge:
+            return [WeatherRaw.merge(results)]
+        else:
+            return results
+
+    @staticmethod
+    def currentByCityCountry(name, country, into_db: bool = True, merge: bool = True):
+        dt = dbdatetime()
+        results = [
+            OWM.getCurrentByCityStateCountry(name, "", country),
+            VisualCrossing.getCurrentByCityCountry(name, country),
+            WeatherStack.getCurrentByCity(", ".join([name, country])),
+            WeatherStack.getCurrentByCity(name)
+        ]
+
+        if into_db:
+            location = dbactions.locationByNameCountry(name, country)
+            if location is not None:
+                for weather in results:
+                    in_base = Weather.query.filter_by(temperature=weather.temperature,
+                                                      humidity=weather.humidity,
+                                                      pressure=weather.pressure,
+                                                      wind_speed=weather.wind_speed,
+                                                      wind_direction=weather.wind_direction).first() is not None
+                    if not (weather.isEmpty() or in_base):
+                        weather = weather.toModel(Weather, dt, location.location_id)
+                        db.session.add(weather)
+            db.session.commit()
+
+        if merge:
+            return [WeatherRaw.merge(results)]
+        else:
+            return results
 
 
 class OWM:
@@ -65,8 +118,6 @@ class OWM:
     token = ""
     current_coord_url = "https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={token}"
     current_city_url = "https://api.openweathermap.org/data/2.5/weather?q={city}{state}{country}&appid={token}"
-    current_id_url = "https://api.openweathermap.org/data/2.5/weather?id={id}&appid={token}"
-    current_zip_url = "https://api.openweathermap.org/data/2.5/weather?zip={zip}{country}&appid={token}"
 
     @staticmethod
     def isValidResponse(response: Response) -> bool:
@@ -96,6 +147,23 @@ class OWM:
             "wind_speed": json["wind"].get("speed", None),
             "wind_direction": degreesToWind(json["wind"].get("deg", None))
         }
+
+        loc_args = {
+            "latitude": json["coord"]["lat"],
+            "longitude": json["coord"]["lon"],
+            "name": json["name"],
+            "country": countries.get(alpha_2=json["sys"]["country"]).name
+        }
+
+        loc_exists = dbactions.locationByNameCountry(loc_args["name"], loc_args["country"]) is not None
+        if not loc_exists:
+            loc_exists = dbactions.locationByName(loc_args["name"]) is not None
+
+        if not loc_exists:
+            location = Location(**loc_args)
+            db.session.add(location)
+            db.session.commit()
+
         return WeatherRaw(**kwargs)
 
     @classmethod
@@ -105,27 +173,9 @@ class OWM:
             return cls.parseFromResponse(response)
 
     @classmethod
-    def getCurrentByCityState(cls, city_name: str, state: str) -> WeatherRaw:
-        response = get(cls.current_city_url.format(city=city_name, state="," + state, country="", token=cls.token))
-        if cls.isValidResponse(response):
-            return cls.parseFromResponse(response)
-
-    @classmethod
     def getCurrentByCityStateCountry(cls, city_name: str, state: str, country: str) -> WeatherRaw:
         response = get(
             cls.current_city_url.format(city=city_name, state="," + state, country="," + country, token=cls.token))
-        if cls.isValidResponse(response):
-            return cls.parseFromResponse(response)
-
-    @classmethod
-    def getCurrentById(cls, city_id: str) -> WeatherRaw:
-        response = get(cls.current_id_url.format(id=city_id, token=cls.token))
-        if cls.isValidResponse(response):
-            return cls.parseFromResponse(response)
-
-    @classmethod
-    def getCurrentByZip(cls, zipcode: str, country: str) -> WeatherRaw:
-        response = get(cls.current_id_url.format(zip=zipcode, country="," + country, token=cls.token))
         if cls.isValidResponse(response):
             return cls.parseFromResponse(response)
 
@@ -190,6 +240,7 @@ class WeatherAPI:
             "wind_speed": kps_to_ms(json.get("wind_kph", None)),
             "wind_direction": degreesToWind(json.get("wind_degree", None))
         }
+
         return WeatherRaw(**kwargs)
 
 
@@ -216,20 +267,10 @@ class WeatherStack:
             return False, json["error"]["info"]
         return True, ""
 
-    # Querying by IP, City name and longitude + latitude is pretty same
+    # Querying by city name and longitude + latitude is pretty same
 
     @classmethod
     def getCurrentByCity(cls, query: str) -> WeatherRaw:
-        response = get(cls.current_weather_url.format(token=cls.token, query=query))
-        is_good, message = cls.isResponseGood(response)
-        if is_good:
-            return cls.parseCurrentWeather(response)
-        else:
-            logger.error(f"WeatherStack error while fetching current weather: {message}")
-            return WeatherRaw.empty()
-
-    @classmethod
-    def getCurrentByIp(cls, query: str) -> WeatherRaw:
         response = get(cls.current_weather_url.format(token=cls.token, query=query))
         is_good, message = cls.isResponseGood(response)
         if is_good:
@@ -250,14 +291,31 @@ class WeatherStack:
 
     @staticmethod
     def parseCurrentWeather(response: Response) -> WeatherRaw:
-        json = loads(response.text)["current"]
+        json = loads(response.text)
         kwargs = {
-            "temperature": json.get("temperature", None),
-            "humidity": json.get("humidity", None),
-            "pressure": mbar_to_mmhg(json.get("pressure", None)),
-            "wind_speed": kps_to_ms(json.get("wind_speed", None)),
-            "wind_direction": degreesToWind(json.get("wind_degree", None))
+            "temperature": json["current"].get("temperature", None),
+            "humidity": json["current"].get("humidity", None),
+            "pressure": mbar_to_mmhg(json["current"].get("pressure", None)),
+            "wind_speed": kps_to_ms(json["current"].get("wind_speed", None)),
+            "wind_direction": degreesToWind(json["current"].get("wind_degree", None))
         }
+
+        loc_args = {
+            "latitude": json["location"]["lat"],
+            "longitude": json["location"]["lon"],
+            "name": json["location"]["name"],
+            "country": json["location"]["country"]
+        }
+
+        loc_exists = dbactions.locationByNameCountry(loc_args["name"], loc_args["country"]) is not None
+        if not loc_exists:
+            loc_exists = dbactions.locationByName(loc_args["name"]) is not None
+
+        if not loc_exists:
+            location = Location(**loc_args)
+            db.session.add(location)
+            db.session.commit()
+
         return WeatherRaw(**kwargs)
 
 
@@ -319,22 +377,28 @@ class VisualCrossing:
 
     @classmethod
     def parseCurrentWeather(cls, response):
-        try:
-            json = loads(response.text)["currentConditions"]
-            kwargs = {
-                "temperature": json.get("temp", None),
-                "humidity": json.get("humidity", None),
-                "pressure": mbar_to_mmhg(json.get("sealevelpressure", None)),
-                "wind_speed": kps_to_ms(json.get("windspeed", None)),
-                "wind_direction": degreesToWind(json.get("winddir", None))
-            }
-            return WeatherRaw(**kwargs)
-        except KeyError:
-            if response.status_code == 200:
-                logger.warn("VisualCrossing didn't find current weather records")
-            else:
-                logger.error(f"VisualCrossing {response.status_code} error: {response.text}")
-            return WeatherRaw.empty()
+        json = loads(response.text)
+        kwargs = {
+            "temperature": json["currentConditions"].get("temp", None),
+            "humidity": json["currentConditions"].get("humidity", None),
+            "pressure": mbar_to_mmhg(json["currentConditions"].get("sealevelpressure", None)),
+            "wind_speed": kps_to_ms(json["currentConditions"].get("windspeed", None)),
+            "wind_direction": degreesToWind(json["currentConditions"].get("winddir", None))
+        }
+
+        loc_args = {
+            "latitude": json["latitude"],
+            "longitude": json["longitude"],
+            "name": json["address"],
+        }
+
+        loc_exists = dbactions.locationByName(loc_args["name"]) is not None
+        if not loc_exists:
+            location = Location(**loc_args)
+            db.session.add(location)
+            db.session.commit()
+
+        return WeatherRaw(**kwargs)
 
     @classmethod
     def getPastByCity(cls, city_name: str, dt: datetime) -> WeatherRaw:

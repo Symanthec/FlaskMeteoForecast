@@ -6,7 +6,9 @@
 {% block body %}
 {% for weather in results %}
 <div class="weather-block">
-    <h3>Forecast for {{ location }}:</h3>
+    {% if location != None %}
+    <h3>Forecast for {{ location.name }}:</h3>
+    {% endif %}
     <ol>
         {% if weather.temperature != None %}
         <li>Temperature: {{ '%0.1f'|format(weather.temperature|float) }} °C</li>

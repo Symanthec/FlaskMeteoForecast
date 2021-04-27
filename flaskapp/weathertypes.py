@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 
 
@@ -106,5 +107,14 @@ class WeatherRaw:
 
         return WeatherRaw(**final)
 
-    def toModel(self, model_type: type):
-        return model_type(**self.__dict__)
+    def toModel(self, model_type: type, dt: datetime, loc_id: int):
+        args = {
+            "temperature": self.temperature,
+            "humidity": self.humidity,
+            "pressure": self.pressure,
+            "wind_speed": self.wind_speed,
+            "wind_direction": self.wind_direction,
+            "datetime": dt,
+            "location_id": loc_id
+        }
+        return model_type(**args)
