@@ -1,8 +1,14 @@
+"""
+Contains ADT for wind direction and weather representation
+"""
 from datetime import datetime
 from enum import Enum
 
 
 class WindDirection(Enum):
+    """
+    Weather direction enumeration similar to compass' arrow direction
+    """
     NONE = "None"
     N = "N"
     NE = "NE"
@@ -30,7 +36,12 @@ wind_map = [
 ]
 
 
-def degreesToWind(degrees: float) -> WindDirection:
+def degrees_to_wind(degrees: float) -> WindDirection:
+    """
+    Transform wind degree to WindDirection value
+    :param degrees: wind degree
+    :return: WindDirection
+    """
     if not degrees:
         return WindDirection.NONE
     region = 45  # degrees
@@ -41,7 +52,9 @@ def degreesToWind(degrees: float) -> WindDirection:
 
 
 class WeatherRaw:
-
+    """
+    Used for displaying and merging multiple weather records into one approximated
+    """
     def __init__(self, **kwargs):
         self.temperature = kwargs.get("temperature", None)
         self.humidity = kwargs.get("humidity", None)
@@ -49,7 +62,11 @@ class WeatherRaw:
         self.wind_speed = kwargs.get("wind_speed", None)
         self.wind_direction = kwargs.get("wind_direction", WindDirection.NONE)
 
-    def isEmpty(self):
+    def is_empty(self) -> bool:
+        """
+        Checks whether record is empty
+        :return: bool
+        """
         return self.temperature is None and \
                self.humidity is None and \
                self.pressure is None and \
@@ -58,6 +75,11 @@ class WeatherRaw:
 
     @staticmethod
     def empty():
+        """
+        Returns empty value.
+        Mostly used when parsing fails
+        :return: WeatherRaw object with all values set to None (wind_direction is exception)
+        """
         return WeatherRaw(temperature=None,
                           humidity=None,
                           pressure=None,
@@ -66,6 +88,11 @@ class WeatherRaw:
 
     @staticmethod
     def merge(weathers: list):
+        """
+        Approximates multiple WeatherRaw objects into one.
+        :param weathers: WeatherRaw objects list
+        :return: WeatherRaw
+        """
         final = {
             "temperature": 0,
             "humidity": 0,
@@ -107,14 +134,21 @@ class WeatherRaw:
 
         return WeatherRaw(**final)
 
-    def toModel(self, model_type: type, dt: datetime, loc_id: int):
+    def to_model(self, model_type: type, date_time: datetime, loc_id: int):
+        """
+        Returns Weather model for adding into DB
+        :param model_type: type of model. Made for removing redundant imports and probable extension
+        :param date_time: date and time of future object's record
+        :param loc_id: ID of future object's location
+        :return: Weather
+        """
         args = {
             "temperature": self.temperature,
             "humidity": self.humidity,
             "pressure": self.pressure,
             "wind_speed": self.wind_speed,
             "wind_direction": self.wind_direction,
-            "datetime": dt,
+            "datetime": date_time,
             "location_id": loc_id
         }
         return model_type(**args)

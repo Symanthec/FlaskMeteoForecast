@@ -1,9 +1,15 @@
+"""
+All ORM models provided by SQLAlchemy declared here
+"""
 from flaskapp import db
 from flaskapp.weathertypes import WindDirection, WeatherRaw
 from flaskapp import logger
 
 
 class User(db.Model):
+    """
+    User class if for user authentication and preferred weather obtainment
+    """
     user_id = db.Column(db.Integer, primary_key=True)
     preferred_location = db.Column(db.Integer)
     username = db.Column(db.String(30), unique=True)
@@ -14,6 +20,9 @@ class User(db.Model):
 
 
 class Location(db.Model):
+    """
+    Location is responsible for caching and searching for weather records
+    """
     location_id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
     country = db.Column(db.String(100))
@@ -29,6 +38,9 @@ class Location(db.Model):
 
 
 class Weather(db.Model):
+    """
+    Weather - bunch of weather parameters for given Location, date and time
+    """
     id = db.Column(db.Integer, primary_key=True)
     location_id = db.Column(db.Integer)
     datetime = db.Column(db.DateTime)
@@ -38,7 +50,11 @@ class Weather(db.Model):
     wind_speed = db.Column(db.Float)
     wind_direction = db.Column(db.Enum(WindDirection))
 
-    def toRaw(self):
+    def to_raw(self) -> WeatherRaw:
+        """
+        Converts database model into WeatherRaw class for merging and displaying
+        :return: WeatherRaw
+        """
         return WeatherRaw(temperature=self.temperature,
                           humidity=self.humidity,
                           pressure=self.pressure,
