@@ -34,3 +34,17 @@ form p input {
 form p input:first-child {
     margin-top: none;
 }
+
+.weather-block {
+    margin: 4px;
+    background: #DDD;
+    border: 2px solid #555;
+    border-radius: 3px;
+    padding: 13px;
+    display: inline-block;
+}
+
+.weather-block h3 {
+    font-weight: bold;
+    font-size: 1.2em;
+}

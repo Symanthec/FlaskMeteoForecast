@@ -1,11 +1,11 @@
 from flaskapp import db
-from flaskapp.weathertypes import WindDirection, FalloutType
+from flaskapp.weathertypes import WindDirection
 
 
 class User(db.Model):
     user_id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(30), unique=True)
-    passhash = db.Column(db.String(128))
+    password_hash = db.Column(db.String(128))
     location = db.relationship("Location", backref='user', lazy="dynamic")
 
     def __repr__(self):
@@ -28,13 +28,11 @@ class Location(db.Model):
 
 class Weather(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    date = db.Column(db.Date, nullable=False)
-    temp = db.Column(db.Float)
+    temperature = db.Column(db.Float)
+    pressure = db.Column(db.Float)
     humidity = db.Column(db.Float)
-    windspeed = db.Column(db.Integer)
-    winddir = db.Column(db.Enum(WindDirection))
-    fallouttype = db.Column(db.Enum(FalloutType))
-    chance = db.Column(db.Integer)
+    wind_speed = db.Column(db.Float)
+    wind_direction = db.Column(db.Enum(WindDirection))
 
     def __repr__(self):
         return f"<Weather {self.date}>"
